@@ -21,7 +21,18 @@ class CreateAccountService {
     email,
     password,
   }: Request): Promise<Accounts> {
+    let agency = 0;
+    let nro_account = 0;
+
     const accountsRepositoy = getRepository(Accounts);
+
+    if (cpf.length > 11) {
+      throw new AppError('Cpf length greater than 11.');
+    }
+
+    if (rg.length > 12) {
+      throw new AppError('RG length greater than 12.');
+    }
 
     const checkAccountExists = await accountsRepositoy.findOne({
       where: { cpf },
@@ -31,83 +42,53 @@ class CreateAccountService {
       throw new AppError('Cpf already used.');
     }
 
-    let agency = 0;
-    let nro_account = 0;
-    const exists = false;
+    const checkAccountExistsRG = await accountsRepositoy.findOne({
+      where: { rg },
+    });
 
-    /* function asyncOp(resolve: any, reject: any): any {
-      accountsRepositoy
-        .findOne({
-          where: { agency, nro_account },
-        })
-        .then(result => {
-          if (result.error()) {
-            reject(result.error());
-          } else if (result.data().length === 0) asyncOp(resolve);
-          else resolve(result);
-        });
+    if (checkAccountExistsRG) {
+      throw new AppError('RG already used.');
     }
 
-    new Promise((r, j) => asyncOp(r, j)).then((result: any) => {
-      console.log(`${result}: This will call if your algorithm succeeds!`);
-    }); */
+    const checkAccountExistsEmail = await accountsRepositoy.findOne({
+      where: { email },
+    });
 
-    // -----------
-
-    /* function test(): any {
-      let returnSample: any;
-
-      accountsRepositoy
-        .findOne({
-          where: {
-            agency,
-            nro_account,
-          },
-        })
-        .then(result => {
-          returnSample = result;
-        });
-
-      return returnSample;
+    if (checkAccountExistsEmail) {
+      throw new AppError('Email already used.');
     }
 
-    let stopped = false;
-
-    while (!stopped) {
-      const result = test();
-
-      console.log(result);
-
-      if (!result) stopped = true;
-    } */
-
-    function test(): any {
-      // 131376
+    function asyncOp(resolve: any) {
       agency = Math.floor(100000 + Math.random() * 900000);
       nro_account = Math.floor(100000 + Math.random() * 900000);
 
+      // if (changeNumber === 1) nro_account = 538434;
+
       accountsRepositoy
         .findOne({
-          where: {
-            agency,
-            nro_account,
-          },
+          where: [{ agency }, { nro_account }],
         })
-        .then(result => result);
+        .then(result => {
+          if (result) {
+            // console.log('yes');
+            // changeNumber += 1;
+            asyncOp(resolve);
+          } else {
+            // console.log('no');
+
+            // e para dizer sucesso para finalizar.
+            resolve();
+
+            // para enviar um resultado para o resolve da promise
+            // resolve(result);
+          }
+        });
     }
 
-    let stopped = false;
-
-    while (!stopped) {
-      const result = test();
-
-      console.log(result);
-
-      if (!result) stopped = true;
-    }
+    // await new Promise((resolve, reject) => asyncOp(resolve));
+    await new Promise(resolve => asyncOp(resolve));
 
     // ------------
-
     /* while (exists !== false) {
       agency = Math.floor(100000 + Math.random() * 900000);
       nro_account = Math.floor(100000 + Math.random() * 900000);
